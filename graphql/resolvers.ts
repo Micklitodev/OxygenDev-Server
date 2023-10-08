@@ -1,9 +1,14 @@
 import { AuthenticationError } from "apollo-server";
-import { User } from "../models";
-
+import { User, Pkg } from "../models";
 import { signToken } from "../utils/auth";
+import { config } from "dotenv";
+config();
+
+const stripeapi = process.env.STRIPE_KEY;
+const stripe = require("stripe")(stripeapi);
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const taxPercent = 8.75;
 
 const resolvers = {
   Query: {
@@ -66,6 +71,67 @@ const resolvers = {
       }
 
       return { token, user };
+    },
+    checkoutSess: async (_: any, args: any, context: any) => {
+      if (context.user) {
+        throw new Error("Not logged in");
+      }
+
+      // const url = new URL(context.headers.referer).origin;
+      const url = "http://localhost:3000";
+
+      const line_items = [];
+
+      // push each product as line item
+      const pkg: any = await Pkg.findById(args.pkg);
+
+      const product = await stripe.products.create({
+        name: pkg.name,
+        description: pkg.description,
+        images: [`${pkg.image}`],
+      });
+
+      const price = await stripe.prices.create({
+        product: product.id,
+        unit_amount: Math.floor(parseInt(pkg.price) * 100),
+        currency: "usd",
+      });
+
+      line_items.push({
+        price: price.id,
+        quantity: 1,
+        tax_rates: [null],
+      });
+
+      // handle tax
+
+      const taxRate = await stripe.taxRates.create({
+        display_name: "Tax",
+        description: "Sales Tax",
+        jurisdiction: "GA",
+        percentage: `${taxPercent}`,
+        inclusive: false,
+      });
+
+      for (let i = 0; i < line_items.length; i++) {
+        line_items[i].tax_rates = [taxRate.id];
+      }
+
+      try {
+        // create stripe sesssion
+
+        const session = await stripe.checkout.sessions.create({
+          payment_method_types: ["card"],
+          line_items,
+          mode: "payment",
+          success_url: `${url}/dashboard/?session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${url}/`,
+        });
+
+        return { session: session.id };
+      } catch (err) {
+        throw new Error("Session Failed.");
+      }
     },
   },
 };

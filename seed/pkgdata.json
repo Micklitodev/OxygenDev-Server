@@ -1,0 +1,7 @@
+[
+  {
+    "name": "Basic",
+    "price": 9.99,
+    "features": ["highspeed", "fast", "good"]
+  }
+]

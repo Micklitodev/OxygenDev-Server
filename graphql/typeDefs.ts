@@ -8,14 +8,22 @@ const typeDefs = gql`
     email: String
   }
 
+  type Checkout {
+    session: ID
+  }
+
   type Auth {
     token: ID
     user: User
   }
 
+  type Pkg {
+    _id: ID
+    name: String
+    price: Float
+    features: [String]
+  }
 
-
-  
   type Query {
     user: User
   }
@@ -29,6 +37,8 @@ const typeDefs = gql`
     ): Auth
 
     login(email: String!, password: String!): Auth
+
+    checkoutSess(pkg: [ID]!): Checkout
   }
 `;
 
