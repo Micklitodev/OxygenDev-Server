@@ -95,6 +95,7 @@ const resolvers = {
         product: product.id,
         unit_amount: Math.floor(parseInt(pkg.price) * 100),
         currency: "usd",
+        recurring: { interval: "month" },
       });
 
       line_items.push({
@@ -123,8 +124,8 @@ const resolvers = {
         const session = await stripe.checkout.sessions.create({
           payment_method_types: ["card"],
           line_items,
-          mode: "payment",
-          success_url: `${url}/dashboard/?session_id={CHECKOUT_SESSION_ID}`,
+          mode: "subscription",
+          success_url: `${url}/page/success?session_id={CHECKOUT_SESSION_ID}`,
           cancel_url: `${url}/`,
         });
 
