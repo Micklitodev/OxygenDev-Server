@@ -11,6 +11,9 @@ const PkgSchema = new Schema({
     required: true,
     min: 0.99,
   },
+  popular: {
+    type: Boolean,
+  },
   features: [
     {
       type: String,

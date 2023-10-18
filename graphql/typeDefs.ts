@@ -21,11 +21,13 @@ const typeDefs = gql`
     _id: ID
     name: String
     price: Float
+    popular: Boolean
     features: [String]
   }
 
   type Query {
     user: User
+    getPkg: [Pkg]
   }
 
   type Mutation {

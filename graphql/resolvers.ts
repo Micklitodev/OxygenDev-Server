@@ -24,8 +24,10 @@ const resolvers = {
         throw new AuthenticationError("Not logged in");
       }
     },
+    getPkg: async (_: any, args: any) => {
+      return await Pkg.find();
+    },
   },
-
   Mutation: {
     addUser: async (_: any, args: any) => {
       if (args.password.length < 5) {
