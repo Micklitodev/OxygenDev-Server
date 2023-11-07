@@ -11,7 +11,6 @@
   ## Table of contents
   
   - [ Link ](#link)
-  - [ Screenshot ](#screenshot)
   - [ Installation ](#installation)
   - [ Usage ](#usage)
   - [ Contributions ](#contributions)
@@ -23,12 +22,6 @@
   ## Link
   
   [Click Here](https://oxygen-dev.vercel.app/) to go to the repo link.
-  
-
-
-  ## Screenshot
-  
-  ![image](./public/oxygendev.png)
   
 
   
