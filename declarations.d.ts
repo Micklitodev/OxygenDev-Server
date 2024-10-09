@@ -1,2 +1,2 @@
-declare module "bcrypt";
+declare module "argon2";
 declare module "jsonwebtoken";

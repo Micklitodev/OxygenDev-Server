@@ -1,18 +1,14 @@
 import { AuthenticationError } from "apollo-server";
 import { User, Pkg } from "../models";
 import { signToken } from "../utils/auth";
-import { config } from "dotenv";
-config();
-
-const stripeapi = process.env.STRIPE_KEY;
-const stripe = require("stripe")(stripeapi);
-
+import { Users, Context, UserUpdate, TokenWithUser, Pkgs } from "../lib/types";
+import stripe from "../client/stripe";
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const taxPercent = 8.75;
 
 const resolvers = {
   Query: {
-    user: async (_: any, args: any, context: any) => {
+    user: async (_: any, args: any, context: Context): Promise<Users & any> => {
       if (context.user) {
         try {
           const user = await User.findById(context.user._id);
@@ -24,12 +20,12 @@ const resolvers = {
         throw new AuthenticationError("Not logged in");
       }
     },
-    getPkg: async (_: any, args: any) => {
+    getPkg: async (): Promise<Pkgs[]> => {
       return await Pkg.find();
     },
   },
   Mutation: {
-    addUser: async (_: any, args: any) => {
+    addUser: async (_: any, args: Users): Promise<TokenWithUser> => {
       if (args.password.length < 5) {
         throw new AuthenticationError("Password is not long enough.");
       }
@@ -48,10 +44,10 @@ const resolvers = {
       }
     },
 
-    login: async (_: any, args: any) => {
+    login: async (_: any, args: UserUpdate): Promise<TokenWithUser> => {
       const { email, password } = args;
 
-      if (!emailRegex.test(email)) {
+      if (!emailRegex.test(email!)) {
         throw new AuthenticationError("Email is not in the correct format");
       }
       const user: any = await User.findOne({ email });
@@ -74,17 +70,22 @@ const resolvers = {
 
       return { token, user };
     },
-    checkoutSess: async (_: any, args: any, context: any) => {
+    checkoutSess: async (
+      _: any,
+      args: any,
+      context: Context
+    ): Promise<{ session: string }> => {
       if (context.user) {
         throw new Error("Not logged in");
       }
-
-      // const url = new URL(context.headers.referer).origin;
       const url = "http://localhost:3000";
 
-      const line_items = [];
+      const line_items: {
+        price: string;
+        quantity: number;
+        tax_rates: string[];
+      }[] = [];
 
-      // push each product as line item
       const pkg: any = await Pkg.findById(args.pkg);
 
       const product = await stripe.products.create({
@@ -103,16 +104,14 @@ const resolvers = {
       line_items.push({
         price: price.id,
         quantity: 1,
-        tax_rates: [null],
+        tax_rates: [],
       });
-
-      // handle tax
 
       const taxRate = await stripe.taxRates.create({
         display_name: "Tax",
         description: "Sales Tax",
         jurisdiction: "GA",
-        percentage: `${taxPercent}`,
+        percentage: taxPercent,
         inclusive: false,
       });
 
@@ -121,8 +120,6 @@ const resolvers = {
       }
 
       try {
-        // create stripe sesssion
-
         const session = await stripe.checkout.sessions.create({
           payment_method_types: ["card"],
           line_items,

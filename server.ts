@@ -9,7 +9,7 @@ const server = new ApolloServer({
   typeDefs,
   resolvers,
   context: authMiddleware,
-}); 
+});
 
 db.once("open", () => {
   console.log("sucess", `http://localhost:${PORT}/graphql`);

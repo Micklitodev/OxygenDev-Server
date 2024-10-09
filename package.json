@@ -5,22 +5,27 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc",
-    "start": "node dist/server.js",
-    "seed": "npm run build && node dist/seed/seed.js"
+    "start": "docker compose up",
+    "seed": "ts-node /app/seed/seed.ts",
+    "server": "node build/server.js",
+    "server:dev": "ts-node-dev --poll --respawn --exit-child --transpile-only --inspect=0.0.0.0:9229 /app/server.ts",
+    "docker:dbseed": "docker-compose exec oxygendev-server npm run seed"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
     "typescript": "^5.2.2"
   },
   "dependencies": {
-    "typescript": "^5.2.2",
     "apollo-server": "^3.12.1",
-    "bcrypt": "^5.1.1",
+    "argon2": "^0.41.1",
     "dotenv": "^16.3.1",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^7.5.3",
-    "stripe": "^13.9.0"
+    "stripe": "^13.9.0",
+    "typescript": "^5.2.2"
   }
 }

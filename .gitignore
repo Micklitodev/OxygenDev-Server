@@ -27,6 +27,7 @@ yarn-error.log*
 # local env files
 .env*.local
 .env
+.env.development
 
 # vercel
 .vercel
@@ -38,3 +39,7 @@ next-env.d.ts
 
 #package lock
 package-lock.json
+
+
+#mongodb data
+/data

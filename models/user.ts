@@ -1,6 +1,6 @@
 import { Schema, model } from "mongoose";
 
-import bcrypt from "bcrypt";
+import argon2 from "argon2";
 
 const userSchema = new Schema({
   firstName: {
@@ -25,19 +25,16 @@ const userSchema = new Schema({
   },
 });
 
-// set up pre-save middleware to hash password
 userSchema.pre("save", async function (next) {
   if (this.isNew || this.isModified("password")) {
-    const saltRounds = 10;
-    this.password = await bcrypt.hash(this.password, saltRounds);
+    this.password = await argon2.hash(this.password);
   }
 
   next();
 });
 
-// compare the incoming password with the hashed password
 userSchema.methods.isCorrectPassword = async function (password: any) {
-  return await bcrypt.compare(password, this.password);
+  return await argon2.verify(this.password, password);
 };
 
 const User = model("User", userSchema);

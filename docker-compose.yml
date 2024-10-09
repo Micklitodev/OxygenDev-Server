@@ -1,0 +1,35 @@
+services:
+  mongo-db:
+    image: mongo:latest
+    container_name: mongo-db
+    restart: always
+    ports:
+      - 27017:27017
+    volumes:
+      - ./data:/data/db
+    networks:
+      - oxygendev-dev-net
+
+  oxygendev-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: oxygendev-server
+    container_name: oxygendev-server
+    ports:
+      - 4000:4000
+      - 9229:9229
+    volumes:
+      - .:/app
+      - /app/node_modules
+    networks:
+      - oxygendev-dev-net
+    env_file:
+      - ./config/.env.development
+    environment:
+      NODE_ENV: development
+      MONGODB_URI: mongodb://mongo-db:27017/graphql-test
+
+networks:
+  oxygendev-dev-net:
+    name: oxygendev-dev-net

@@ -1,0 +1,16 @@
+#!/bin/bash
+
+main() {
+  case "${NODE_ENV}" in
+  development|test)
+    npm run server:dev
+    ;;
+  *)
+      npm run server
+    ;;
+  esac
+}
+
+set -eo pipefail
+
+main
