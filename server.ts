@@ -11,7 +11,7 @@ const server = new ApolloServer({
   context: authMiddleware,
 });
 
-db.once("open", () => {
-  console.log("sucess", `http://localhost:${PORT}/graphql`);
+db.once("open", (e) => {
+  console.log("error/connected", e);
   return server.listen({ port: PORT });
 });
