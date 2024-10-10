@@ -1,0 +1,67 @@
+name: Build/Deploy
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Extract Branch Name
+        shell: bash
+        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+        id: extract_branch
+      - name: Set Up Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+          cache: npm
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      - name: ECR Login
+        run: aws ecr get-login-password | docker login --username AWS --password-stdin ${{ secrets.AWS_ECR_REPO }}
+      - name: Build Docker Image
+        run: docker build -t tuyo-core:${{ steps.extract_branch.outputs.branch }} .
+      - name: Tag Image
+        run: docker tag tuyo-core:${{ steps.extract_branch.outputs.branch }} ${{ secrets.AWS_ECR_REPO }}:${{ steps.extract_branch.outputs.branch }}
+      - name: Push Image to ECR
+        run: docker push ${{ secrets.AWS_ECR_REPO }}:${{ steps.extract_branch.outputs.branch }}
+  deploy-production-api:
+    name: Deploy API
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Extract Branch Name
+        shell: bash
+        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+        id: extract_branch
+      - name: Set Up Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache: npm
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      - name: Install ECS Deploy
+        run: curl https://raw.githubusercontent.com/silinternational/ecs-deploy/master/ecs-deploy | sudo tee /usr/bin/ecs-deploy
+      - name: ECS Deploy Permissions
+        run: sudo chmod +x /usr/bin/ecs-deploy
+      - name: ECR Login
+        run: aws ecr get-login-password | docker login --username AWS --password-stdin ${{ secrets.AWS_ECR_REPO }}
+      - name: Deploy to ECS
+        run: ecs-deploy -c ${{ secrets.PRODUCTION_API_ECS_CLUSTER }} -n ${{ secrets.PRODUCTION_API_ECS_SERVICE }} -i ${{ secrets.AWS_ECR_REPO }}:${{ steps.extract_branch.outputs.branch }} --timeout 600
